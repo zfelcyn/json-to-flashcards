@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>JSON → Flashcards</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <h1>JSON → Flashcards</h1>
+          <div class="sub">
+            Paste JSON, generate a deck, then study with flip / next / prev.
+            Saved locally.
+          </div>
+        </div>
+
+        <div class="topRight">
+          <div class="sub">
+            Shortcuts: <span class="kbd">Space</span> flip ·
+            <span class="kbd">←</span>/<span class="kbd">→</span> nav ·
+            <span class="kbd">S</span> shuffle
+          </div>
+
+          <label class="toggle" title="Toggle light/dark mode">
+            <input type="checkbox" id="themeToggle" />
+            <span id="themeLabel">Light</span>
+          </label>
+        </div>
+      </header>
+
+      <div class="grid">
+        <!-- Left: JSON Input -->
+        <section class="cardPanel">
+          <div class="panelHead">
+            <div class="title">
+              Deck JSON <span class="pill" id="deckCountPill">0 cards</span>
+            </div>
+            <div class="pill" id="storagePill">localStorage: empty</div>
+          </div>
+
+          <div class="panelBody">
+            <textarea
+              id="jsonInput"
+              spellcheck="false"
+              placeholder='Paste JSON here…
+
+Supported formats:
+
+1) Array of objects with front/back:
+[
+  { "front": "Question", "back": "Answer" },
+  { "front": "TCP", "back": "Transmission Control Protocol" }
+]
+
+2) Array of pairs:
+[
+  ["Q1","A1"],
+  ["Q2","A2"]
+]
+
+3) Object map:
+{
+  "Q1": "A1",
+  "Q2": "A2"
+}'
+            ></textarea>
+
+            <div class="row">
+              <div class="btns">
+                <button class="primary" id="loadBtn">Load Deck</button>
+                <button id="exampleBtn">Insert Example</button>
+                <button id="exportBtn">Export Current Deck</button>
+              </div>
+              <div class="btns">
+                <button class="danger" id="clearBtn">Clear Saved Deck</button>
+              </div>
+            </div>
+
+            <div class="hint">
+              Notes:
+              <ul>
+                <li>
+                  Any item can also use keys like <code>q/a</code>,
+                  <code>question/answer</code>, <code>term/definition</code>.
+                </li>
+                <li>
+                  If an object has more fields, the app will try to guess the
+                  “front” and “back”.
+                </li>
+              </ul>
+            </div>
+
+            <div class="err" id="errorBox"></div>
+          </div>
+        </section>
+
+        <!-- Right: Study UI -->
+        <section class="cardPanel" id="studyPanel">
+          <div class="studyTop">
+            <div class="studyMeta">
+              <span class="pill" id="indexPill">Card 0 / 0</span>
+              <div class="progressBar" aria-label="progress">
+                <div id="progressFill"></div>
+              </div>
+              <span class="pill" id="shuffledPill">order: normal</span>
+            </div>
+
+            <div class="studyControls">
+              <button id="prevBtn">Prev</button>
+              <button class="primary" id="flipBtn">Flip</button>
+              <button id="nextBtn">Next</button>
+              <button id="shuffleBtn">Shuffle</button>
+            </div>
+          </div>
+
+          <div class="bigCardWrap">
+            <div class="bigCard" id="bigCard" title="Click to flip">
+              <div class="faceLabel" id="faceLabel">Front</div>
+              <div class="faceText" id="faceText">Load a deck to begin</div>
+              <div class="smallNote" id="smallNote">
+                Tip: paste JSON on the left, then click “Load Deck”.
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
