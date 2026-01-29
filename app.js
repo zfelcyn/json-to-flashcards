@@ -245,20 +245,13 @@ function flip() {
 function toggleShuffle() {
   if (!deck.length) return;
   isShuffled = !isShuffled;
-  const oldCard = currentCard();
 
   viewOrder = isShuffled
     ? shuffleArray(deck.map((_, i) => i))
     : deck.map((_, i) => i);
 
-  if (oldCard) {
-    const oldIndex = deck.indexOf(oldCard);
-    const pos = viewOrder.indexOf(oldIndex);
-    current = pos >= 0 ? pos : 0;
-  } else {
-    current = 0;
-  }
-
+  // Reset to beginning of deck after shuffle/unshuffle
+  current = 0;
   showingFront = true;
   renderCard();
 }
