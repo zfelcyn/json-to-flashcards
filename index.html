@@ -1,53 +1,56 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>JSON → Flashcards</title>
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="icon" href="assets/favicon.ico" sizes="any" />
-  </head>
 
-  <body>
-    <div class="wrap">
-      <header>
-        <div>
-          <h1>JSON → Flashcards</h1>
-          <div class="sub">
-            Paste JSON, generate a deck, then study with flip / next / prev.
-            Saved locally.
-          </div>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JSON → Flashcards</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="assets/favicon.ico" sizes="any" />
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>JSON → Flashcards</h1>
+        <div class="sub">
+          Paste JSON, generate a deck, then study with flip / next / prev.
+          Saved locally.
+        </div>
+      </div>
+
+      <div class="topRight">
+        <div class="sub">
+          Shortcuts: <span class="kbd">Space</span> flip ·
+          <span class="kbd">←</span>/<span class="kbd">→</span> nav ·
+          <span class="kbd">S</span> shuffle ·
+          <span class="kbd">F</span> focus
         </div>
 
-        <div class="topRight">
-          <div class="sub">
-            Shortcuts: <span class="kbd">Space</span> flip ·
-            <span class="kbd">←</span>/<span class="kbd">→</span> nav ·
-            <span class="kbd">S</span> shuffle
-          </div>
+        <button class="headerBtn" id="fullscreenBtn" title="Focus mode (hide JSON panel)">
+          <span class="fs-text">Focus</span>
+        </button>
 
-          <label class="toggle" title="Toggle light/dark mode">
-            <input type="checkbox" id="themeToggle" />
-            <span id="themeLabel">Light</span>
-          </label>
+        <label class="toggle" title="Toggle light/dark mode">
+          <input type="checkbox" id="themeToggle" />
+          <span id="themeLabel">Light</span>
+        </label>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: JSON Input -->
+      <section class="cardPanel" id="jsonPanel">
+        <div class="panelHead">
+          <div class="title">
+            Deck JSON <span class="pill" id="deckCountPill">0 cards</span>
+          </div>
+          <div class="pill" id="storagePill">localStorage: empty</div>
         </div>
-      </header>
 
-      <div class="grid">
-        <!-- Left: JSON Input -->
-        <section class="cardPanel">
-          <div class="panelHead">
-            <div class="title">
-              Deck JSON <span class="pill" id="deckCountPill">0 cards</span>
-            </div>
-            <div class="pill" id="storagePill">localStorage: empty</div>
-          </div>
-
-          <div class="panelBody">
-            <textarea
-              id="jsonInput"
-              spellcheck="false"
-              placeholder='Paste JSON here…
+        <div class="panelBody">
+          <textarea id="jsonInput" spellcheck="false" placeholder='Paste JSON here…
 
 Supported formats:
 
@@ -67,141 +70,154 @@ Supported formats:
 {
   "Q1": "A1",
   "Q2": "A2"
-}'
-            ></textarea>
+}'></textarea>
 
-            <div class="row">
-              <div class="btns">
-                <button class="primary" id="loadBtn">Load Deck</button>
-                <button id="exampleBtn">Insert Example</button>
-                <button id="exportBtn">Export Current Deck</button>
-              </div>
-              <div class="btns">
-                <button class="danger" id="clearBtn">Clear Saved Deck</button>
-              </div>
+          <div class="row">
+            <div class="btns">
+              <button class="primary" id="loadBtn">Load Deck</button>
+              <button id="exampleBtn">Insert Example</button>
+              <button id="exportBtn">Export Current Deck</button>
+              <button id="gptPromptBtn">📋 GPT Prompt</button>
             </div>
-
-            <div class="hint">
-              Notes:
-              <ul>
-                <li>
-                  Any item can also use keys like <code>q/a</code>,
-                  <code>question/answer</code>, <code>term/definition</code>.
-                </li>
-                <li>
-                  If an object has more fields, the app will try to guess the
-                  “front” and “back”.
-                </li>
-              </ul>
-            </div>
-
-            <div class="err" id="errorBox"></div>
-          </div>
-        </section>
-
-        <!-- Right: Study / Quiz UI -->
-        <section class="cardPanel" id="studyPanel">
-          <div class="studyTop">
-            <div class="studyMeta">
-              <span class="pill" id="indexPill">Card 0 / 0</span>
-              <div class="progressBar" aria-label="progress">
-                <div id="progressFill"></div>
-              </div>
-              <span class="pill" id="shuffledPill">order: normal</span>
-            </div>
-
-            <div class="studyControls">
-              <button id="prevBtn">Prev</button>
-              <button class="primary" id="flipBtn">Flip</button>
-              <button id="nextBtn">Next</button>
-              <button id="shuffleBtn">Shuffle</button>
+            <div class="btns">
+              <button class="danger" id="clearBtn">Clear Saved Deck</button>
             </div>
           </div>
 
-          <!-- Mode Toggle -->
-          <div class="modeBar">
-            <div class="modeToggle">
-              <button class="modeBtn active" id="studyModeBtn">📖 Study</button>
-              <button class="modeBtn" id="quizModeBtn">🎯 Quiz</button>
+          <div class="hint">
+            Notes:
+            <ul>
+              <li>
+                Any item can also use keys like <code>q/a</code>,
+                <code>question/answer</code>, <code>term/definition</code>.
+              </li>
+              <li>
+                If an object has more fields, the app will try to guess the
+                “front” and “back”.
+              </li>
+            </ul>
+          </div>
+
+          <div class="err" id="errorBox"></div>
+        </div>
+      </section>
+
+      <!-- Right: Study / Quiz UI -->
+      <section class="cardPanel" id="studyPanel">
+        <div class="studyTop">
+          <div class="studyMeta">
+            <span class="pill" id="indexPill">Card 0 / 0</span>
+            <div class="progressBar" aria-label="progress">
+              <div id="progressFill"></div>
             </div>
-            <div class="quizTypeToggle" id="quizTypeToggle" style="display: none;">
-              <button class="typeBtn active" id="multipleChoiceBtn">Multiple Choice</button>
-              <button class="typeBtn" id="writeInBtn">Write-In</button>
-            </div>
-            <div class="scoreDisplay" id="scoreDisplay" style="display: none;">
-              <span class="scorePill" id="scorePill">🏆 0 pts</span>
-              <span class="streakPill" id="streakPill">🔥 0</span>
+            <span class="pill" id="shuffledPill">order: normal</span>
+          </div>
+
+          <div class="studyControls">
+            <button id="prevBtn">Prev</button>
+            <button class="primary" id="flipBtn">Flip</button>
+            <button id="nextBtn">Next</button>
+            <button id="shuffleBtn">Shuffle</button>
+          </div>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="modeBar">
+          <div class="modeToggle">
+            <button class="modeBtn active" id="studyModeBtn">📖 Study</button>
+            <button class="modeBtn" id="quizModeBtn">🎯 Quiz</button>
+          </div>
+          <div class="quizTypeToggle" id="quizTypeToggle" style="display: none;">
+            <button class="typeBtn active" id="multipleChoiceBtn">Multiple Choice</button>
+            <button class="typeBtn" id="writeInBtn">Write-In</button>
+          </div>
+          <div class="scoreDisplay" id="scoreDisplay" style="display: none;">
+            <span class="scorePill" id="scorePill">🏆 0 pts</span>
+            <span class="streakPill" id="streakPill">🔥 0</span>
+          </div>
+        </div>
+
+        <div class="bigCardWrap">
+          <div class="bigCard" id="bigCard" title="Click to flip">
+            <div class="faceLabel" id="faceLabel">Front</div>
+            <div class="faceText" id="faceText">Load a deck to begin</div>
+            <div class="smallNote" id="smallNote">
+              Tip: paste JSON on the left, then click "Load Deck".
             </div>
           </div>
 
-          <div class="bigCardWrap">
-            <div class="bigCard" id="bigCard" title="Click to flip">
-              <div class="faceLabel" id="faceLabel">Front</div>
-              <div class="faceText" id="faceText">Load a deck to begin</div>
-              <div class="smallNote" id="smallNote">
-                Tip: paste JSON on the left, then click "Load Deck".
-              </div>
-            </div>
-
-            <!-- Quiz Answer Area (Multiple Choice) -->
-            <div class="quizAnswers" id="quizAnswers" style="display: none;">
-              <div class="choiceGrid" id="choiceGrid">
-                <button class="choiceBtn" data-choice="0">A</button>
-                <button class="choiceBtn" data-choice="1">B</button>
-                <button class="choiceBtn" data-choice="2">C</button>
-                <button class="choiceBtn" data-choice="3">D</button>
-              </div>
-            </div>
-
-            <!-- Quiz Answer Area (Write-In) -->
-            <div class="writeInArea" id="writeInArea" style="display: none;">
-              <input type="text" id="writeInInput" placeholder="Type your answer..." autocomplete="off" />
-              <div class="writeInBtns">
-                <button class="primary" id="submitAnswerBtn">Submit</button>
-                <button id="showAnswerBtn">Show Answer</button>
-              </div>
-            </div>
-
-            <!-- Quiz Feedback -->
-            <div class="quizFeedback" id="quizFeedback" style="display: none;">
-              <div class="feedbackText" id="feedbackText"></div>
-              <button class="primary" id="nextQuizBtn">Next Card</button>
+          <!-- Quiz Answer Area (Multiple Choice) -->
+          <div class="quizAnswers" id="quizAnswers" style="display: none;">
+            <div class="choiceGrid" id="choiceGrid">
+              <button class="choiceBtn" data-choice="0">A</button>
+              <button class="choiceBtn" data-choice="1">B</button>
+              <button class="choiceBtn" data-choice="2">C</button>
+              <button class="choiceBtn" data-choice="3">D</button>
             </div>
           </div>
-        </section>
 
-        <!-- Session Summary Modal -->
-        <div class="modal" id="summaryModal" style="display: none;">
-          <div class="modalContent">
-            <h2>🎉 Quiz Complete!</h2>
-            <div class="summaryStats">
-              <div class="statRow">
-                <span>Total Score</span>
-                <span id="finalScore">0</span>
-              </div>
-              <div class="statRow">
-                <span>Accuracy</span>
-                <span id="finalAccuracy">0%</span>
-              </div>
-              <div class="statRow">
-                <span>Best Streak</span>
-                <span id="finalStreak">🔥 0</span>
-              </div>
-              <div class="statRow">
-                <span>Cards Reviewed</span>
-                <span id="finalCards">0 / 0</span>
-              </div>
+          <!-- Quiz Answer Area (Write-In) -->
+          <div class="writeInArea" id="writeInArea" style="display: none;">
+            <input type="text" id="writeInInput" placeholder="Type your answer..." autocomplete="off" />
+            <div class="writeInBtns">
+              <button class="primary" id="submitAnswerBtn">Submit</button>
+              <button id="showAnswerBtn">Show Answer</button>
             </div>
-            <div class="summaryBtns">
-              <button class="primary" id="restartQuizBtn">Restart Quiz</button>
-              <button id="retryMissedBtn">Practice Missed</button>
-              <button id="backToStudyBtn">Back to Study</button>
+          </div>
+
+          <!-- Quiz Feedback -->
+          <div class="quizFeedback" id="quizFeedback" style="display: none;">
+            <div class="feedbackText" id="feedbackText"></div>
+            <button class="primary" id="nextQuizBtn">Next Card</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Session Summary Modal -->
+      <div class="modal" id="summaryModal" style="display: none;">
+        <div class="modalContent">
+          <h2>🎉 Quiz Complete!</h2>
+          <div class="summaryStats">
+            <div class="statRow">
+              <span>Total Score</span>
+              <span id="finalScore">0</span>
             </div>
+            <div class="statRow">
+              <span>Accuracy</span>
+              <span id="finalAccuracy">0%</span>
+            </div>
+            <div class="statRow">
+              <span>Best Streak</span>
+              <span id="finalStreak">🔥 0</span>
+            </div>
+            <div class="statRow">
+              <span>Cards Reviewed</span>
+              <span id="finalCards">0 / 0</span>
+            </div>
+          </div>
+          <div class="summaryBtns">
+            <button class="primary" id="restartQuizBtn">Restart Quiz</button>
+            <button id="retryMissedBtn">Practice Missed</button>
+            <button id="backToStudyBtn">Back to Study</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GPT Prompt Modal -->
+      <div class="gptModal" id="gptModal" style="display: none;">
+        <div class="gptModalContent">
+          <h2>📋 GPT Prompt for Formatting Notes</h2>
+          <div class="prompt-text" id="gptPromptText"></div>
+          <div class="modal-btns">
+            <button class="primary" id="copyPromptBtn">Copy to Clipboard</button>
+            <button id="closePromptBtn">Close</button>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <script src="app.js"></script>
-  </body>
+  <script src="app.js"></script>
+</body>
+
 </html>

@@ -697,6 +697,7 @@ function enterQuizMode() {
   }
 
   quizMode = true;
+  isShuffled = true; // Quiz mode always uses shuffled deck
   setError("");
 
   // Update UI
@@ -822,5 +823,117 @@ bigCard.addEventListener("click", (e) => {
   if (quizMode) {
     e.stopPropagation();
     return;
+  }
+});
+
+// ---------- Fullscreen Mode ----------
+
+const gridElement = document.querySelector(".grid");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+const fsText = fullscreenBtn.querySelector(".fs-text");
+let isFullscreen = false;
+
+function toggleFullscreen() {
+  isFullscreen = !isFullscreen;
+  gridElement.classList.toggle("fullscreen", isFullscreen);
+  fullscreenBtn.classList.toggle("active", isFullscreen);
+
+  // Update text
+  fsText.textContent = isFullscreen ? "Exit Focus" : "Focus";
+  fullscreenBtn.title = isFullscreen ? "Exit focus mode" : "Focus mode (hide JSON panel)";
+}
+
+fullscreenBtn.addEventListener("click", toggleFullscreen);
+
+// Keyboard shortcut: F for fullscreen
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "f" && document.activeElement !== writeInInput && document.activeElement !== jsonInput) {
+    toggleFullscreen();
+  }
+});
+
+// ---------- GPT Prompt Feature ----------
+
+const gptPromptBtn = document.getElementById("gptPromptBtn");
+const gptModal = document.getElementById("gptModal");
+const gptPromptText = document.getElementById("gptPromptText");
+const copyPromptBtn = document.getElementById("copyPromptBtn");
+const closePromptBtn = document.getElementById("closePromptBtn");
+
+const GPT_PROMPT = `You are a helpful assistant that converts study notes into flashcard JSON format.
+
+The user will provide notes, and you should convert them into a JSON array of flashcard objects.
+
+**Output Format:**
+\`\`\`json
+[
+  { "front": "Question or term", "back": "Answer or definition" },
+  { "front": "Another question", "back": "Another answer" }
+]
+\`\`\`
+
+**Rules:**
+1. Each flashcard has "front" (question/term) and "back" (answer/definition)
+2. Keep text concise but complete
+3. One concept per card
+4. For lists, consider making separate cards for each item
+5. Output ONLY valid JSON, no other text
+
+**Alternative accepted formats (but prefer the above):**
+- Array of pairs: \`[["Q1", "A1"], ["Q2", "A2"]]\`
+- Object map: \`{"Term1": "Definition1", "Term2": "Definition2"}\`
+- Keys can also be: q/a, question/answer, term/definition
+
+**Example Input:**
+"The mitochondria is the powerhouse of the cell. 
+Photosynthesis converts sunlight into energy.
+DNA stands for deoxyribonucleic acid."
+
+**Example Output:**
+\`\`\`json
+[
+  { "front": "What is the mitochondria?", "back": "The powerhouse of the cell" },
+  { "front": "What does photosynthesis do?", "back": "Converts sunlight into energy" },
+  { "front": "What does DNA stand for?", "back": "Deoxyribonucleic acid" }
+]
+\`\`\`
+
+Now convert the user's notes into flashcard JSON:`;
+
+function showGptPrompt() {
+  gptPromptText.textContent = GPT_PROMPT;
+  gptModal.style.display = "flex";
+}
+
+function hideGptPrompt() {
+  gptModal.style.display = "none";
+}
+
+async function copyPrompt() {
+  try {
+    await navigator.clipboard.writeText(GPT_PROMPT);
+    copyPromptBtn.textContent = "Copied!";
+    setTimeout(() => (copyPromptBtn.textContent = "Copy to Clipboard"), 1500);
+  } catch (e) {
+    copyPromptBtn.textContent = "Copy failed";
+    setTimeout(() => (copyPromptBtn.textContent = "Copy to Clipboard"), 1500);
+  }
+}
+
+gptPromptBtn.addEventListener("click", showGptPrompt);
+closePromptBtn.addEventListener("click", hideGptPrompt);
+copyPromptBtn.addEventListener("click", copyPrompt);
+
+// Close modal on backdrop click
+gptModal.addEventListener("click", (e) => {
+  if (e.target === gptModal) {
+    hideGptPrompt();
+  }
+});
+
+// Close modal on Escape
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && gptModal.style.display === "flex") {
+    hideGptPrompt();
   }
 });
