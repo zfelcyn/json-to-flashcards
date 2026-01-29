@@ -791,3 +791,158 @@ button.danger:hover {
   gap: 8px;
   margin-top: 16px;
 }
+
+/* ---------- Mobile Responsive Styles ---------- */
+
+/* Hide shortcuts text on smaller screens */
+@media (max-width: 768px) {
+
+  /* Hide the shortcuts hint */
+  .topRight .sub {
+    display: none;
+  }
+
+  /* Stack header vertically */
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .topRight {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Larger touch targets for buttons */
+  button {
+    padding: 12px 14px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  /* Stack the button rows */
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btns {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  /* Make textarea taller on mobile for easier pasting */
+  textarea {
+    min-height: 180px;
+    font-size: 13px;
+  }
+
+  /* Smaller card text on mobile */
+  .faceText {
+    font-size: 22px;
+  }
+
+  /* Progress bar smaller */
+  .progressBar {
+    width: 120px;
+  }
+
+  /* Study meta stack */
+  .studyMeta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Study controls wrap */
+  .studyControls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Modal content smaller padding */
+  .modalContent,
+  .gptModalContent {
+    padding: 20px;
+    max-width: 95%;
+  }
+
+  /* Card choices stack on mobile */
+  .choiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .choiceBtn {
+    min-height: 50px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 400px) {
+  .wrap {
+    padding: 12px 10px 30px;
+  }
+
+  h1 {
+    font-size: 18px;
+  }
+
+  .panelHead {
+    padding: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .panelBody {
+    padding: 10px;
+  }
+
+  .bigCard {
+    min-height: 250px;
+    padding: 16px;
+  }
+
+  .faceText {
+    font-size: 20px;
+  }
+
+  /* Study top stack on very small screens */
+  .studyTop {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .studyControls {
+    justify-content: space-between;
+  }
+
+  /* Mode bar stack */
+  .modeBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .modeToggle,
+  .quizTypeToggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .scoreDisplay {
+    justify-content: center;
+  }
+}
+
+/* Fullscreen mode on mobile */
+@media (max-width: 768px) {
+  .grid.fullscreen .bigCard {
+    min-height: 350px;
+  }
+
+  .grid.fullscreen .faceText {
+    font-size: 26px;
+  }
+}

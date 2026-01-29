@@ -315,6 +315,7 @@ exportBtn.addEventListener("click", async () => {
 
 clearBtn.addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
+  jsonInput.value = ""; // Also clear the textarea
   deck = [];
   viewOrder = [];
   current = 0;
