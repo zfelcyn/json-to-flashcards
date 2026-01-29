@@ -99,7 +99,7 @@ Supported formats:
           </div>
         </section>
 
-        <!-- Right: Study UI -->
+        <!-- Right: Study / Quiz UI -->
         <section class="cardPanel" id="studyPanel">
           <div class="studyTop">
             <div class="studyMeta">
@@ -118,16 +118,87 @@ Supported formats:
             </div>
           </div>
 
+          <!-- Mode Toggle -->
+          <div class="modeBar">
+            <div class="modeToggle">
+              <button class="modeBtn active" id="studyModeBtn">📖 Study</button>
+              <button class="modeBtn" id="quizModeBtn">🎯 Quiz</button>
+            </div>
+            <div class="quizTypeToggle" id="quizTypeToggle" style="display: none;">
+              <button class="typeBtn active" id="multipleChoiceBtn">Multiple Choice</button>
+              <button class="typeBtn" id="writeInBtn">Write-In</button>
+            </div>
+            <div class="scoreDisplay" id="scoreDisplay" style="display: none;">
+              <span class="scorePill" id="scorePill">🏆 0 pts</span>
+              <span class="streakPill" id="streakPill">🔥 0</span>
+            </div>
+          </div>
+
           <div class="bigCardWrap">
             <div class="bigCard" id="bigCard" title="Click to flip">
               <div class="faceLabel" id="faceLabel">Front</div>
               <div class="faceText" id="faceText">Load a deck to begin</div>
               <div class="smallNote" id="smallNote">
-                Tip: paste JSON on the left, then click “Load Deck”.
+                Tip: paste JSON on the left, then click "Load Deck".
               </div>
+            </div>
+
+            <!-- Quiz Answer Area (Multiple Choice) -->
+            <div class="quizAnswers" id="quizAnswers" style="display: none;">
+              <div class="choiceGrid" id="choiceGrid">
+                <button class="choiceBtn" data-choice="0">A</button>
+                <button class="choiceBtn" data-choice="1">B</button>
+                <button class="choiceBtn" data-choice="2">C</button>
+                <button class="choiceBtn" data-choice="3">D</button>
+              </div>
+            </div>
+
+            <!-- Quiz Answer Area (Write-In) -->
+            <div class="writeInArea" id="writeInArea" style="display: none;">
+              <input type="text" id="writeInInput" placeholder="Type your answer..." autocomplete="off" />
+              <div class="writeInBtns">
+                <button class="primary" id="submitAnswerBtn">Submit</button>
+                <button id="showAnswerBtn">Show Answer</button>
+              </div>
+            </div>
+
+            <!-- Quiz Feedback -->
+            <div class="quizFeedback" id="quizFeedback" style="display: none;">
+              <div class="feedbackText" id="feedbackText"></div>
+              <button class="primary" id="nextQuizBtn">Next Card</button>
             </div>
           </div>
         </section>
+
+        <!-- Session Summary Modal -->
+        <div class="modal" id="summaryModal" style="display: none;">
+          <div class="modalContent">
+            <h2>🎉 Quiz Complete!</h2>
+            <div class="summaryStats">
+              <div class="statRow">
+                <span>Total Score</span>
+                <span id="finalScore">0</span>
+              </div>
+              <div class="statRow">
+                <span>Accuracy</span>
+                <span id="finalAccuracy">0%</span>
+              </div>
+              <div class="statRow">
+                <span>Best Streak</span>
+                <span id="finalStreak">🔥 0</span>
+              </div>
+              <div class="statRow">
+                <span>Cards Reviewed</span>
+                <span id="finalCards">0 / 0</span>
+              </div>
+            </div>
+            <div class="summaryBtns">
+              <button class="primary" id="restartQuizBtn">Restart Quiz</button>
+              <button id="retryMissedBtn">Practice Missed</button>
+              <button id="backToStudyBtn">Back to Study</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

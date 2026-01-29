@@ -361,8 +361,466 @@ window.addEventListener("keydown", (e) => {
         }));
         viewOrder = deck.map((_, i) => i);
       }
-    } catch {}
+    } catch { }
   }
   updatePills();
   renderCard();
 })();
+
+// ---------- Quiz Mode ----------
+
+// Quiz State
+let quizMode = false; // false = study, true = quiz
+let quizType = "multipleChoice"; // "multipleChoice" or "writeIn"
+let score = 0;
+let streak = 0;
+let bestStreak = 0;
+let correctCount = 0;
+let answeredCount = 0;
+let missedCards = []; // indices of cards answered incorrectly
+let currentChoices = []; // for multiple choice
+let correctChoiceIndex = -1;
+let quizCardIndex = 0; // current position in quiz
+let waitingForNext = false; // after answering, waiting to go to next
+
+// Quiz Elements
+const studyModeBtn = document.getElementById("studyModeBtn");
+const quizModeBtn = document.getElementById("quizModeBtn");
+const quizTypeToggle = document.getElementById("quizTypeToggle");
+const multipleChoiceBtn = document.getElementById("multipleChoiceBtn");
+const writeInBtn = document.getElementById("writeInBtn");
+const scoreDisplay = document.getElementById("scoreDisplay");
+const scorePill = document.getElementById("scorePill");
+const streakPill = document.getElementById("streakPill");
+
+const quizAnswers = document.getElementById("quizAnswers");
+const choiceGrid = document.getElementById("choiceGrid");
+const choiceBtns = document.querySelectorAll(".choiceBtn");
+
+const writeInArea = document.getElementById("writeInArea");
+const writeInInput = document.getElementById("writeInInput");
+const submitAnswerBtn = document.getElementById("submitAnswerBtn");
+const showAnswerBtn = document.getElementById("showAnswerBtn");
+
+const quizFeedback = document.getElementById("quizFeedback");
+const feedbackText = document.getElementById("feedbackText");
+const nextQuizBtn = document.getElementById("nextQuizBtn");
+
+const summaryModal = document.getElementById("summaryModal");
+const finalScore = document.getElementById("finalScore");
+const finalAccuracy = document.getElementById("finalAccuracy");
+const finalStreak = document.getElementById("finalStreak");
+const finalCards = document.getElementById("finalCards");
+const restartQuizBtn = document.getElementById("restartQuizBtn");
+const retryMissedBtn = document.getElementById("retryMissedBtn");
+const backToStudyBtn = document.getElementById("backToStudyBtn");
+
+// Study controls that should be hidden in quiz mode
+const studyControls = document.querySelector(".studyControls");
+
+// ---------- Quiz Helpers ----------
+
+function normalizeAnswer(str) {
+  return str.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+function fuzzyMatch(userAnswer, correctAnswer) {
+  const user = normalizeAnswer(userAnswer);
+  const correct = normalizeAnswer(correctAnswer);
+
+  // Exact match
+  if (user === correct) return true;
+
+  // Check if user answer contains most of the correct answer
+  const correctWords = correct.split(" ");
+  const userWords = user.split(" ");
+
+  // If correct answer is short, require exact match
+  if (correctWords.length <= 2) {
+    return user === correct;
+  }
+
+  // For longer answers, check word overlap (at least 80%)
+  const matchedWords = correctWords.filter(w => userWords.includes(w));
+  return matchedWords.length >= correctWords.length * 0.8;
+}
+
+function generateChoices(correctIndex) {
+  // Get all other card backs as potential wrong answers
+  const others = deck
+    .map((card, i) => ({ back: card.back, index: i }))
+    .filter((item) => item.index !== correctIndex && item.back.trim());
+
+  // Shuffle and pick 3
+  const shuffledOthers = shuffleArray(others).slice(0, 3);
+
+  // Create choices array with correct answer
+  const choices = shuffledOthers.map((item) => item.back);
+
+  // If we don't have enough wrong answers, fill with placeholders
+  while (choices.length < 3) {
+    choices.push("(No other answer available)");
+  }
+
+  // Add correct answer at random position
+  const correctPos = Math.floor(Math.random() * 4);
+  choices.splice(correctPos, 0, deck[correctIndex].back);
+
+  return { choices, correctPos };
+}
+
+function updateScoreDisplay() {
+  scorePill.textContent = `🏆 ${score} pts`;
+  streakPill.textContent = `🔥 ${streak}`;
+}
+
+function triggerStreakAnimation() {
+  streakPill.classList.remove("fire");
+  void streakPill.offsetWidth; // Force reflow
+  streakPill.classList.add("fire");
+}
+
+function awardPoints(correct) {
+  if (correct) {
+    correctCount++;
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+
+    // Base points
+    let points = 10;
+
+    // Streak bonuses
+    if (streak >= 10) {
+      points += 20;
+      triggerStreakAnimation();
+    } else if (streak >= 5) {
+      points += 10;
+      triggerStreakAnimation();
+    } else if (streak >= 3) {
+      points += 5;
+      triggerStreakAnimation();
+    }
+
+    score += points;
+  } else {
+    streak = 0;
+  }
+  answeredCount++;
+  updateScoreDisplay();
+}
+
+function showQuizFeedback(correct, correctAnswer) {
+  feedbackText.className = "feedbackText " + (correct ? "correct" : "incorrect");
+
+  if (correct) {
+    feedbackText.textContent = "✓ Correct!";
+    if (streak >= 10) {
+      feedbackText.textContent += " 🔥 10+ streak! +20 bonus!";
+    } else if (streak >= 5) {
+      feedbackText.textContent += " 🔥 5+ streak! +10 bonus!";
+    } else if (streak >= 3) {
+      feedbackText.textContent += " 🔥 3+ streak! +5 bonus!";
+    }
+  } else {
+    feedbackText.innerHTML = `✗ Incorrect<br><small>Correct answer: ${correctAnswer}</small>`;
+  }
+
+  quizFeedback.style.display = "block";
+  waitingForNext = true;
+}
+
+function hideQuizUI() {
+  quizAnswers.style.display = "none";
+  writeInArea.style.display = "none";
+  quizFeedback.style.display = "none";
+}
+
+function showQuizCard() {
+  hideQuizUI();
+  waitingForNext = false;
+
+  const card = currentCard();
+  if (!card) return;
+
+  // Reset choice button states
+  choiceBtns.forEach((btn) => {
+    btn.classList.remove("correct", "incorrect");
+    btn.disabled = false;
+  });
+
+  // Show front (question)
+  faceLabel.textContent = "Question";
+  faceText.textContent = card.front || "(empty question)";
+  smallNote.textContent = "";
+
+  if (quizType === "multipleChoice") {
+    const deckIndex = viewOrder[current];
+    const { choices, correctPos } = generateChoices(deckIndex);
+    currentChoices = choices;
+    correctChoiceIndex = correctPos;
+
+    // Populate buttons
+    const labels = ["A", "B", "C", "D"];
+    choiceBtns.forEach((btn, i) => {
+      btn.textContent = `${labels[i]}. ${choices[i]}`;
+    });
+
+    quizAnswers.style.display = "block";
+  } else {
+    writeInInput.value = "";
+    writeInArea.style.display = "block";
+    writeInInput.focus();
+  }
+}
+
+function handleChoiceClick(choiceIndex) {
+  if (waitingForNext) return;
+
+  const deckIndex = viewOrder[current];
+  const correct = choiceIndex === correctChoiceIndex;
+
+  // Track missed
+  if (!correct && !missedCards.includes(deckIndex)) {
+    missedCards.push(deckIndex);
+  }
+
+  // Highlight buttons
+  choiceBtns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === correctChoiceIndex) {
+      btn.classList.add("correct");
+    } else if (i === choiceIndex) {
+      btn.classList.add("incorrect");
+    }
+  });
+
+  awardPoints(correct);
+  showQuizFeedback(correct, deck[deckIndex].back);
+}
+
+function handleWriteInSubmit() {
+  if (waitingForNext) return;
+
+  const deckIndex = viewOrder[current];
+  const userAnswer = writeInInput.value.trim();
+  const correctAnswer = deck[deckIndex].back;
+  const correct = fuzzyMatch(userAnswer, correctAnswer);
+
+  if (!correct && !missedCards.includes(deckIndex)) {
+    missedCards.push(deckIndex);
+  }
+
+  awardPoints(correct);
+  showQuizFeedback(correct, correctAnswer);
+  writeInArea.style.display = "none";
+}
+
+function handleShowAnswer() {
+  if (waitingForNext) return;
+
+  const deckIndex = viewOrder[current];
+
+  // Count as incorrect
+  if (!missedCards.includes(deckIndex)) {
+    missedCards.push(deckIndex);
+  }
+
+  awardPoints(false);
+  showQuizFeedback(false, deck[deckIndex].back);
+  writeInArea.style.display = "none";
+}
+
+function goNextQuizCard() {
+  waitingForNext = false;
+
+  // Check if quiz complete
+  if (current >= viewOrder.length - 1) {
+    showSummary();
+    return;
+  }
+
+  current++;
+  updatePills();
+  showQuizCard();
+}
+
+function showSummary() {
+  const accuracy = answeredCount > 0
+    ? Math.round((correctCount / answeredCount) * 100)
+    : 0;
+
+  finalScore.textContent = `${score} pts`;
+  finalAccuracy.textContent = `${accuracy}%`;
+  finalStreak.textContent = `🔥 ${bestStreak}`;
+  finalCards.textContent = `${correctCount} / ${answeredCount}`;
+
+  // Show/hide retry button based on missed cards
+  retryMissedBtn.style.display = missedCards.length > 0 ? "block" : "none";
+
+  summaryModal.style.display = "flex";
+}
+
+function hideSummary() {
+  summaryModal.style.display = "none";
+}
+
+function resetQuizStats() {
+  score = 0;
+  streak = 0;
+  bestStreak = 0;
+  correctCount = 0;
+  answeredCount = 0;
+  missedCards = [];
+  current = 0;
+  updateScoreDisplay();
+}
+
+function startQuiz(cardIndices = null) {
+  hideSummary();
+  resetQuizStats();
+
+  // Use provided indices or full deck
+  if (cardIndices && cardIndices.length > 0) {
+    viewOrder = shuffleArray(cardIndices);
+  } else {
+    viewOrder = shuffleArray(deck.map((_, i) => i));
+  }
+
+  updatePills();
+  showQuizCard();
+}
+
+function enterQuizMode() {
+  if (deck.length < 4) {
+    setError("Quiz mode requires at least 4 cards for multiple choice options.");
+    return;
+  }
+
+  quizMode = true;
+  setError("");
+
+  // Update UI
+  studyModeBtn.classList.remove("active");
+  quizModeBtn.classList.add("active");
+  quizTypeToggle.style.display = "flex";
+  scoreDisplay.style.display = "flex";
+  studyControls.style.display = "none";
+  bigCard.classList.add("quizMode");
+  bigCard.style.cursor = "default";
+
+  startQuiz();
+}
+
+function exitQuizMode() {
+  quizMode = false;
+  hideSummary();
+  hideQuizUI();
+
+  // Update UI
+  studyModeBtn.classList.add("active");
+  quizModeBtn.classList.remove("active");
+  quizTypeToggle.style.display = "none";
+  scoreDisplay.style.display = "none";
+  studyControls.style.display = "flex";
+  bigCard.classList.remove("quizMode");
+  bigCard.style.cursor = "pointer";
+
+  // Reset to study mode
+  viewOrder = deck.map((_, i) => i);
+  current = 0;
+  showingFront = true;
+  isShuffled = false;
+  updatePills();
+  renderCard();
+}
+
+function setQuizType(type) {
+  quizType = type;
+
+  if (type === "multipleChoice") {
+    multipleChoiceBtn.classList.add("active");
+    writeInBtn.classList.remove("active");
+  } else {
+    multipleChoiceBtn.classList.remove("active");
+    writeInBtn.classList.add("active");
+  }
+
+  // Restart quiz with new type
+  if (quizMode && deck.length >= 4) {
+    startQuiz();
+  }
+}
+
+// ---------- Quiz Event Listeners ----------
+
+studyModeBtn.addEventListener("click", () => {
+  if (!quizMode) return;
+  exitQuizMode();
+});
+
+quizModeBtn.addEventListener("click", () => {
+  if (quizMode) return;
+  enterQuizMode();
+});
+
+multipleChoiceBtn.addEventListener("click", () => {
+  if (quizType === "multipleChoice") return;
+  setQuizType("multipleChoice");
+});
+
+writeInBtn.addEventListener("click", () => {
+  if (quizType === "writeIn") return;
+  setQuizType("writeIn");
+});
+
+choiceBtns.forEach((btn, i) => {
+  btn.addEventListener("click", () => handleChoiceClick(i));
+});
+
+submitAnswerBtn.addEventListener("click", handleWriteInSubmit);
+showAnswerBtn.addEventListener("click", handleShowAnswer);
+nextQuizBtn.addEventListener("click", goNextQuizCard);
+
+restartQuizBtn.addEventListener("click", () => startQuiz());
+retryMissedBtn.addEventListener("click", () => startQuiz([...missedCards]));
+backToStudyBtn.addEventListener("click", exitQuizMode);
+
+// Write-in Enter key support
+writeInInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    handleWriteInSubmit();
+  }
+});
+
+// Quiz keyboard shortcuts (1-4 for choices, Enter for next)
+window.addEventListener("keydown", (e) => {
+  if (!quizMode) return;
+
+  // Don't interfere with typing in write-in mode
+  if (document.activeElement === writeInInput) return;
+
+  const key = e.key;
+
+  // Number keys for multiple choice
+  if (quizType === "multipleChoice" && !waitingForNext) {
+    if (key === "1" || key === "a") handleChoiceClick(0);
+    else if (key === "2" || key === "b") handleChoiceClick(1);
+    else if (key === "3" || key === "c") handleChoiceClick(2);
+    else if (key === "4" || key === "d") handleChoiceClick(3);
+  }
+
+  // Enter or Space for next card
+  if (waitingForNext && (key === "Enter" || key === " ")) {
+    e.preventDefault();
+    goNextQuizCard();
+  }
+});
+
+// Override bigCard click in quiz mode
+bigCard.addEventListener("click", (e) => {
+  if (quizMode) {
+    e.stopPropagation();
+    return;
+  }
+});
